@@ -10,12 +10,18 @@ export const Pagination = (props: {
   onGotoPrevPage: (prevPage: number) => any;
   onJumpToSpecPage: (pageNum: number) => any;
 }) => {
-  const [pageNumberInput, setPageNumberInput] = useState<string>(props.pageNumber.toString());
+  const [pageNumberInput, setPageNumberInput] = useState<string>(
+    props.pageNumber.toString(),
+  );
 
   const handleEnterKeyJump = (event: KeyboardEvent<HTMLInputElement>) => {
     setPageNumberInput(pageNumberInput.replace(/[^\d]/g, ""));
-    if (Number.parseInt(pageNumberInput) > 0 && Number.parseInt(pageNumberInput) < props.pageAmount + 1) {
-      (event.key === "Go" || event.key === "Enter") && props.onJumpToSpecPage(Number.parseInt(pageNumberInput));
+    if (
+      Number.parseInt(pageNumberInput) > 0 &&
+      Number.parseInt(pageNumberInput) < props.pageAmount + 1
+    ) {
+      (event.key === "Go" || event.key === "Enter") &&
+        props.onJumpToSpecPage(Number.parseInt(pageNumberInput));
       return;
     }
   };
@@ -25,7 +31,7 @@ export const Pagination = (props: {
   };
 
   return (
-    <div className="my-5 flex justify-between font-bold text-base rtl:flex-row-reverse">
+    <div className="my-5 mx-auto flex w-full max-w-[940px] items-center justify-between px-3 font-bold text-base rtl:flex-row-reverse">
       {props.pageNumber !== 1 && (
         <Button
           className="rounded-full"

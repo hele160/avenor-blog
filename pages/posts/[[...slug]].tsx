@@ -1,10 +1,8 @@
 import { TagsList } from "@/components/post-list-page/TagsList";
-import { Separator } from "@/components/ui/separator";
 import { Footer } from "@/components/utils/Footer";
 import { ContentContainer, Page } from "@/components/utils/Layout";
 import { NavBar } from "@/components/utils/NavBar";
-import { PageTitle } from "@/components/utils/PageTitle";
-import { Pagination } from "@/components/utils/Pagination";
+import { PaginationSection } from "@/components/utils/PaginationSection";
 import { PostList } from "@/components/utils/PostList";
 import { SEO } from "@/components/utils/SEO";
 import { PostCountPerPagination } from "@/consts/consts";
@@ -13,14 +11,14 @@ import { sortedPosts } from "@/lib/post-process";
 import { paginateArray } from "@/lib/utils";
 import type { TPostListItem } from "@/types/docs.type";
 import type { GetStaticPaths, GetStaticProps } from "next";
-import { useRouter } from "next/navigation";
-import { LuPenTool } from "react-icons/lu";
+import { useRouter } from "next/router";
 
 type PostsPageProps = {
   pageAmount: number;
   pageNumber: number;
   postList: TPostListItem[];
   tagList: { name: string; count: number }[];
+  totalPostCount: number;
 };
 
 export default function PostsPage(props: PostsPageProps) {
@@ -34,20 +32,22 @@ export default function PostsPage(props: PostsPageProps) {
     <Page>
       <SEO
         coverURL={Config.PageCovers.websiteCoverURL}
-        description={"Here is the list page for all published posts. Click here for more details."}
-        title={`${Config.SiteTitle} - All published posts`}
+        description={
+          "Here is the list page for all published posts. Click here for more details."
+        }
+        title="文章"
       />
       <NavBar />
       <ContentContainer>
-        <PageTitle>
-          <LuPenTool className="mx-2 my-auto" />
-          {"ALL POSTS"}
-        </PageTitle>
-        <TagsList tagsList={props.tagList} />
-        <Separator />
-        <PostList data={props.postList} />
-        <Separator />
-        <Pagination
+        <div className="posts-page-container">
+          <div className="blog-header w-full">
+            <h1 className="page-title caption-font">文章</h1>
+            <p className="page-subtitle">{`共 ${props.totalPostCount} 篇，持续更新中`}</p>
+          </div>
+          <TagsList tagsList={props.tagList} />
+          <PostList data={props.postList} variant="posts" />
+        </div>
+        <PaginationSection
           onGotoNextPage={(nextPage) => handleChangePage(nextPage)}
           onGotoPrevPage={(prevPage) => handleChangePage(prevPage)}
           onJumpToSpecPage={(pageNum) => handleChangePage(pageNum)}
@@ -61,9 +61,13 @@ export default function PostsPage(props: PostsPageProps) {
 }
 
 export const getStaticPaths: GetStaticPaths = () => {
-  const allPaths: { params: { slug?: string[] } }[] = [{ params: { slug: [] } }];
+  const allPaths: { params: { slug?: string[] } }[] = [
+    { params: { slug: [] } },
+  ];
 
-  const pageAmount = Math.ceil(sortedPosts.allPostList.length / PostCountPerPagination);
+  const pageAmount = Math.ceil(
+    sortedPosts.allPostList.length / PostCountPerPagination,
+  );
 
   for (let i = 0; i < pageAmount; i++) {
     allPaths.push({ params: { slug: [(i + 1).toString()] } });
@@ -72,14 +76,22 @@ export const getStaticPaths: GetStaticPaths = () => {
   return { paths: allPaths, fallback: false };
 };
 
-export const getStaticProps: GetStaticProps<PostsPageProps> = async (context) => {
+export const getStaticProps: GetStaticProps<PostsPageProps> = async (
+  context,
+) => {
   const params = (context.params?.slug as string[]) ?? [];
 
   const pageNumber = params[0] ? Number.parseInt(params[0]) : 1;
 
-  const postList: TPostListItem[] = paginateArray(sortedPosts.allPostList, PostCountPerPagination, pageNumber);
+  const postList: TPostListItem[] = paginateArray(
+    sortedPosts.allPostList,
+    PostCountPerPagination,
+    pageNumber,
+  );
 
-  const pageAmount = Math.ceil(sortedPosts.allPostList.length / PostCountPerPagination);
+  const pageAmount = Math.ceil(
+    sortedPosts.allPostList.length / PostCountPerPagination,
+  );
 
   const tagList: {
     name: string;
@@ -97,6 +109,7 @@ export const getStaticProps: GetStaticProps<PostsPageProps> = async (context) =>
       pageNumber: pageNumber,
       postList: postList,
       tagList: tagList,
+      totalPostCount: sortedPosts.allPostList.length,
     },
   };
 };

@@ -13,7 +13,6 @@ import type { TSearchResultItem } from "@/types/docs.type";
 import axios from "axios";
 import { isArray } from "lodash";
 import type { GetServerSideProps } from "next";
-import { SiteLinksSearchBoxJsonLd } from "next-seo";
 import { useState } from "react";
 
 type SearchPageProps = { query: string | null };
@@ -25,7 +24,9 @@ export default function SearchPage(props: SearchPageProps) {
 
   const fetchSearchAPI = (param: string): Promise<TSearchResultItem[]> => {
     setIsLoading(true);
-    return axios.get<TSearchResultItem[]>(`/api/search/${param}`).then((response) => response.data);
+    return axios
+      .get<TSearchResultItem[]>(`/api/search/${param}`)
+      .then((response) => response.data);
   };
 
   const handleSearch = (word: string) => {
@@ -49,7 +50,8 @@ export default function SearchPage(props: SearchPageProps) {
         if (data.length === 0) {
           toast({
             title: "Empty Result",
-            description: "No results were found for this keyword. Try another keyword.",
+            description:
+              "No results were found for this keyword. Try another keyword.",
           });
         }
       })
@@ -63,21 +65,16 @@ export default function SearchPage(props: SearchPageProps) {
 
   return (
     <Page>
-      <SEO description={"Search the posts on your demand."} title={`${Config.SiteTitle} - Search`} />
+      <SEO description={"Search the posts on your demand."} title="搜索" />
       <Toaster />
       <NavBar />
-      <SiteLinksSearchBoxJsonLd
-        potentialActions={[
-          {
-            target: `https://${Config.SiteDomain}/search?q={search_term_string}`,
-            queryInput: "search_term_string",
-          },
-        ]}
-        url={`https://${Config.SiteDomain}/`}
-      />
       <ContentContainer>
         <PageTitle>{"SEARCH POSTS"}</PageTitle>
-        <SearchInput isLoading={isLoading} handleSearch={handleSearch} word={props.query} />
+        <SearchInput
+          isLoading={isLoading}
+          handleSearch={handleSearch}
+          word={props.query}
+        />
         <SearchResultList searchResult={searchResult} />
       </ContentContainer>
       <Footer />
@@ -85,7 +82,9 @@ export default function SearchPage(props: SearchPageProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<SearchPageProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<SearchPageProps> = async (
+  context,
+) => {
   let query = context.query.q;
   if (isArray(query)) query = query.join(" ");
   return { props: { query: query ?? null } };

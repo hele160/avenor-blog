@@ -6,7 +6,7 @@ export default function Document() {
     // please change the dir prop value in the following code to rtl
     // Like <Html dir="rtl" lang="en">
     // Otherwise, please do not change
-    <Html dir="ltr" lang="en">
+    <Html dir="ltr" lang="en" suppressHydrationWarning>
       <Head />
       <body>
         <Main />

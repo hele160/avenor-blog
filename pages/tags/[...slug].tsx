@@ -3,7 +3,7 @@ import { Footer } from "@/components/utils/Footer";
 import { ContentContainer, Page } from "@/components/utils/Layout";
 import { NavBar } from "@/components/utils/NavBar";
 import { PageTitle } from "@/components/utils/PageTitle";
-import { Pagination } from "@/components/utils/Pagination";
+import { PaginationSection } from "@/components/utils/PaginationSection";
 import { PostList } from "@/components/utils/PostList";
 import { SEO } from "@/components/utils/SEO";
 import { PostCountPerPagination } from "@/consts/consts";
@@ -32,15 +32,14 @@ export default function TagsContentPage(props: TagsContentPageProps) {
       <SEO
         coverURL={Config.PageCovers.websiteCoverURL}
         description={`Here are posts under the tag ${props.tagName}.`}
-        title={`Tag - ${props.tagName}`}
+        title="标签"
       />
       <NavBar />
       <ContentContainer>
-        <PageTitle>{`Posts of ${props.tagName}`}</PageTitle>
+        <PageTitle>{`${props.tagName}`}</PageTitle>
         <Separator />
-        <PostList data={props.postList} />
-        <Separator />
-        <Pagination
+        <PostList data={props.postList} variant="posts" />
+        <PaginationSection
           onGotoNextPage={(nextPage) => handleChangePage(nextPage)}
           onGotoPrevPage={(prevPage) => handleChangePage(prevPage)}
           onJumpToSpecPage={(pageNum) => handleChangePage(pageNum)}
@@ -73,16 +72,24 @@ export const getStaticPaths: GetStaticPaths = () => {
   return { paths: allPaths, fallback: false };
 };
 
-export const getStaticProps: GetStaticProps<TagsContentPageProps> = async (context) => {
+export const getStaticProps: GetStaticProps<TagsContentPageProps> = async (
+  context,
+) => {
   const params = (context.params?.slug as string[]) ?? [];
 
   const tagName = params[0] ?? null;
   const pageNumber = params[1] ? Number.parseInt(params[1]) : 1;
   let postList: TPostListItem[] = [];
 
-  postList = paginateArray(sortedPosts.postsByTag[tagName], PostCountPerPagination, pageNumber);
+  postList = paginateArray(
+    sortedPosts.postsByTag[tagName],
+    PostCountPerPagination,
+    pageNumber,
+  );
 
-  const pageAmount = Math.ceil(sortedPosts.postsByTag[tagName].length / PostCountPerPagination);
+  const pageAmount = Math.ceil(
+    sortedPosts.postsByTag[tagName].length / PostCountPerPagination,
+  );
 
   return {
     props: {

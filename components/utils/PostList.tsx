@@ -1,57 +1,69 @@
-import { normalizeDate } from "@/lib/date";
 import type { TPostListItem } from "@/types/docs.type";
-import { nanoid } from "nanoid";
 import Link from "next/link";
-import { Badge } from "../ui/badge";
+import { PostDate } from "./PostDate";
 
-export const PostList = (props: { data: TPostListItem[] }) => {
+const estimateReadingMinutes = (postItem: TPostListItem) => {
+  const sourceText = `${postItem.frontMatter.title} ${postItem.frontMatter.summary ?? ""}`;
+  const roughWordCount = sourceText.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(roughWordCount / 180));
+};
+
+type PostListProps = {
+  data: TPostListItem[];
+  variant?: "default" | "posts";
+};
+
+export const PostList = (props: PostListProps) => {
+  const isPostsVariant = props.variant === "posts";
+
   return (
-    <div>
-      {props.data.map((postItem, index) => (
-        <Link className="cursor-pointer" href={`/blog/${postItem.id}`} key={`post-list-${nanoid()}`}>
-          <div
-            className={`flex flex-col justify-center ${
-              index !== props.data.length - 1 && "border-b"
-            } border-gray-200 px-3 py-1 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900`}
-          >
-            <div className={"post-list-caption-font flex-col py-3"}>
-              <div className="flex justify-center">
-                <h3 className="mx-auto font-extrabold text-lg capitalize">{postItem.frontMatter.title}</h3>
+    <ul
+      className={`posts-list ${isPostsVariant ? "" : "posts-list--default"}`.trim()}
+      role="list"
+    >
+      {props.data.map((postItem) => (
+        <li className="post-card-item is-visible" key={postItem.id}>
+          <Link className="post-card" href={`/blog/${postItem.id}`}>
+            <div className="post-card-body">
+              <div className="post-card-meta">
+                <PostDate
+                  className="post-date"
+                  date={postItem.frontMatter.time}
+                />
+                <span aria-hidden="true" className="post-separator">
+                  ·
+                </span>
+                <span className="post-reading-time">{`约 ${estimateReadingMinutes(postItem)} 分钟`}</span>
               </div>
-              <div className="flex justify-center">
-                {postItem.frontMatter.subtitle && (
-                  <div className="mx-auto font-bold text-gray-700 text-sm capitalize dark:text-gray-300">
-                    {postItem.frontMatter.subtitle}
-                  </div>
-                )}
-              </div>
-            </div>
-            {postItem.frontMatter.summary && (
-              <div className={"flex justify-center content-font"}>
-                <p>{postItem.frontMatter.summary}</p>
-              </div>
-            )}
-            <div className="my-2 flex flex-wrap justify-between">
-              <div className="my-auto mr-2 flex h-6 flex-col justify-center text-center text-sm italic">
-                <div className="my-auto">{normalizeDate(postItem.frontMatter.time)}</div>
-              </div>
+
+              <h2 className="post-title">
+                <span className="post-link">{postItem.frontMatter.title}</span>
+              </h2>
+
+              {postItem.frontMatter.subtitle && (
+                <p className="post-subtitle">{postItem.frontMatter.subtitle}</p>
+              )}
+
+              {postItem.frontMatter.summary && (
+                <p className="post-desc">{postItem.frontMatter.summary}</p>
+              )}
+
               {postItem.frontMatter.tags && (
-                <div className="my-auto flex flex-wrap">
+                <ul aria-label="标签列表" className="post-tags" role="list">
                   {postItem.frontMatter.tags.map((tagName: string) => (
-                    <Badge
-                      className="my-1 mr-1 text-gray-600 dark:text-gray-300"
-                      key={`tags-${nanoid()}`}
-                      variant={"secondary"}
-                    >
-                      {tagName}
-                    </Badge>
+                    <li key={`tags-${postItem.id}-${tagName}`}>
+                      <span className="tag">{tagName}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
-          </div>
-        </Link>
+            <span aria-hidden="true" className="post-arrow">
+              →
+            </span>
+          </Link>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 };

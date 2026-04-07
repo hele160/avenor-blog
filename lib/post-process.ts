@@ -1,12 +1,18 @@
 import fs from "fs";
 import path from "path";
 import { PostFilesDirectory } from "@/consts/consts";
-import type { TPostFrontmatter, TPostListItem, TPostsByTag } from "@/types/docs.type";
+import type {
+  TPostFrontmatter,
+  TPostListItem,
+  TPostsByTag,
+} from "@/types/docs.type";
 import { serialize } from "next-mdx-remote/serialize";
 import { titleCase } from "title-case";
 import { isEmptyString, nullifyEmptyArray, nullifyEmptyString } from "./utils";
 
-async function extractFrontmatters(filepath: string): Promise<TPostFrontmatter> {
+async function extractFrontmatters(
+  filepath: string,
+): Promise<TPostFrontmatter> {
   const source = fs.readFileSync(filepath, "utf-8");
   const mdxSource = await serialize(source, {
     parseFrontmatter: true,
@@ -57,11 +63,9 @@ export const getPostFileContent = (postId: string): string | null => {
 
 const sortOutPosts = async (): Promise<{
   allPostList: TPostListItem[];
-  pinnedPostList: TPostListItem[];
   postsByTag: TPostsByTag;
 }> => {
   const allPostList: TPostListItem[] = [];
-  const pinnedPostList: TPostListItem[] = [];
   const postsByTag: TPostsByTag = {};
 
   const postFilePaths: string[] = readPostsDirectory();
@@ -77,15 +81,8 @@ const sortOutPosts = async (): Promise<{
 
     if (!currentPostListItem.frontMatter.closed) {
       allPostList.push(currentPostListItem);
-      if (currentPostListItem.frontMatter.pin) {
-        pinnedPostList.push(currentPostListItem);
-      }
     }
   }
-
-  pinnedPostList.sort((a, b) => {
-    return a.frontMatter.time > b.frontMatter.time ? -1 : 1;
-  });
 
   allPostList.sort((a, b) => {
     return a.frontMatter.time > b.frontMatter.time ? -1 : 1;
@@ -100,7 +97,7 @@ const sortOutPosts = async (): Promise<{
     });
   });
 
-  return { allPostList: allPostList, postsByTag: postsByTag, pinnedPostList: pinnedPostList };
+  return { allPostList: allPostList, postsByTag: postsByTag };
 };
 
 export const sortedPosts = await sortOutPosts();

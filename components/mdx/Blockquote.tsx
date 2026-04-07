@@ -1,4 +1,6 @@
-const Blockquote = (props: JSX.IntrinsicElements["blockquote"]) => {
+import type { ComponentPropsWithoutRef } from "react";
+
+const Blockquote = (props: ComponentPropsWithoutRef<"blockquote">) => {
   return (
     <blockquote
       className={

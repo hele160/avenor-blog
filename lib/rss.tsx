@@ -1,20 +1,21 @@
 import fs from "fs";
-import { CopyrightAnnouncement, LatestPostCountInHomePage, WebsiteURL } from "@/consts/consts";
+import {
+  CopyrightAnnouncement,
+  LatestPostCountInHomePage,
+  WebsiteURL,
+} from "@/consts/consts";
 import { Config } from "@/data/config";
 import { Feed } from "feed";
-import { JSDOM } from "jsdom";
 import { MDXRemote } from "next-mdx-remote";
 import { serialize } from "next-mdx-remote/serialize";
 import { renderToString } from "react-dom/server";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeMathJax from "rehype-mathjax/svg";
-import rehypePresetMinify from "rehype-preset-minify";
+import rehypeExternalLinks from "rehype-external-links";
 import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
-import externalLinks from "remark-external-links";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import remarkPrism from "remark-prism";
 import { getPostFileContent, sortedPosts } from "./post-process";
 
 const NoticeForRSSReaders = (postId: string) => `
@@ -24,22 +25,13 @@ If it happens, [please read the origin web page](https://${Config.SiteDomain}/bl
 `;
 
 function minifyHTMLCode(htmlString: string): string {
-  const dom = new JSDOM(htmlString);
-  const document = dom.window.document;
-  const elements = document.querySelectorAll("*");
-  const unusedElements = document.querySelectorAll("script, style");
-
-  // Remove all class attributes.
-  elements.forEach((element) => {
-    element.removeAttribute("class");
-  });
-
-  // Remove all script and style tags.
-  unusedElements.forEach((element) => {
-    element.parentElement?.removeChild(element);
-  });
-
-  return dom.serialize();
+  // Keep RSS HTML small and safe without relying on heavy DOM parsers.
+  return htmlString
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+    .replace(/\sclass=("[^"]*"|'[^']*')/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -62,19 +54,36 @@ export const generateRSSFeed = async () => {
     },
   });
 
-  for (let i = 0; i < Math.min(LatestPostCountInHomePage, sortedPosts.allPostList.length); i++) {
+  for (
+    let i = 0;
+    i < Math.min(LatestPostCountInHomePage, sortedPosts.allPostList.length);
+    i++
+  ) {
     const post = sortedPosts.allPostList[i];
     const postFileContent = `${getPostFileContent(post.id)}${NoticeForRSSReaders(post.id)}`;
-    const dateNumber = post.frontMatter.time.split("-").map((num: string) => Number.parseInt(num));
+    const dateNumber = post.frontMatter.time
+      .split("-")
+      .map((num: string) => Number.parseInt(num));
     const mdxSource = await serialize(postFileContent ?? "", {
       parseFrontmatter: true,
       mdxOptions: {
-        remarkPlugins: [remarkPrism, externalLinks, remarkMath, remarkGfm],
-        rehypePlugins: [rehypeMathJax, rehypeAutolinkHeadings, rehypeSlug, rehypePresetMinify as any, rehypeRaw],
+        remarkPlugins: [remarkMath, remarkGfm],
+        rehypePlugins: [
+          rehypeRaw,
+          [
+            rehypeExternalLinks,
+            { rel: ["noopener", "noreferrer"], target: "_blank" },
+          ],
+          rehypeMathJax,
+          rehypeAutolinkHeadings,
+          rehypeSlug,
+        ],
         format: "md",
       },
     });
-    const htmlContent = minifyHTMLCode(renderToString(<MDXRemote {...mdxSource} />));
+    const htmlContent = minifyHTMLCode(
+      renderToString(<MDXRemote {...mdxSource} />),
+    );
 
     feed.addItem({
       title: post.frontMatter.title,

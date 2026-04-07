@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Config } from "@/data/config";
 import { isEmptyString } from "@/lib/utils";
@@ -15,7 +20,9 @@ import { SiAlipay, SiWechat } from "react-icons/si";
 import { Input } from "../ui/input";
 
 export const SponsorBoard = () => {
-  const [isCopiedList, setIsCopiedList] = useState(Config.Sponsor?.Crypto?.map(() => false) ?? []);
+  const [isCopiedList, setIsCopiedList] = useState(
+    Config.Sponsor?.Crypto?.map(() => false) ?? [],
+  );
 
   return (
     <Dialog
@@ -44,12 +51,17 @@ export const SponsorBoard = () => {
             <div className="my-auto flex">
               <FaGithub className="mx-3 my-auto text-4xl text-gray-900 dark:text-gray-500" />
               <div className="my-auto">
-                <h3 className="mx-auto font-bold text-sm">{"Github Sponsor"}</h3>
+                <h3 className="mx-auto font-bold text-sm">
+                  {"Github Sponsor"}
+                </h3>
               </div>
             </div>
             <div className="my-auto">
               <Button asChild className="my-auto font-bold">
-                <Link href={`https://github.com/sponsors/${Config.SocialLinks.github}`} target="_blank">
+                <Link
+                  href={`https://github.com/sponsors/${Config.SocialLinks.github}`}
+                  target="_blank"
+                >
                   {"DONATE"}
                 </Link>
               </Button>
@@ -64,8 +76,12 @@ export const SponsorBoard = () => {
                 <h3 className="mx-auto font-bold text-sm">{"Wechat Pay"}</h3>
               </div>
             </div>
-            <div className="my-auto bg-white p-1">
-              <QRCodeSVG height={100} value={Config.Sponsor?.WechatPayQRCodeContent!} width={100} />
+            <div className="my-auto bg-[hsl(var(--background))] p-1">
+              <QRCodeSVG
+                height={100}
+                value={Config.Sponsor?.WechatPayQRCodeContent!}
+                width={100}
+              />
             </div>
           </div>
         )}
@@ -96,7 +112,10 @@ export const SponsorBoard = () => {
             </div>
             <div className="my-auto">
               <Button asChild className="my-auto font-bold">
-                <Link href={`https://paypal.me/${Config.Sponsor?.PaypalId}`} target="_blank">
+                <Link
+                  href={`https://paypal.me/${Config.Sponsor?.PaypalId}`}
+                  target="_blank"
+                >
                   {"DONATE"}
                 </Link>
               </Button>
@@ -113,7 +132,10 @@ export const SponsorBoard = () => {
             </div>
             <div className="my-2">
               <Button asChild className="my-auto font-bold">
-                <Link href={`https://patreon.com/${Config.Sponsor?.PatreonId}`} target="_blank">
+                <Link
+                  href={`https://patreon.com/${Config.Sponsor?.PatreonId}`}
+                  target="_blank"
+                >
                   {"DONATE"}
                 </Link>
               </Button>
@@ -127,8 +149,8 @@ export const SponsorBoard = () => {
           <div>
             <div className="my-2 w-full text-sm">
               <div>
-                <b>NOTE: </b> Please confirm the corresponding block network and address before transferring money to
-                avoid loss.
+                <b>NOTE: </b> Please confirm the corresponding block network and
+                address before transferring money to avoid loss.
               </div>
             </div>
             <Separator />
@@ -138,10 +160,15 @@ export const SponsorBoard = () => {
                   <div className="my-auto font-bold text-sm">{`${cryptoItem.Name} - ${cryptoItem.Blockchain}`}</div>
                 </div>
                 <div className="flex">
-                  <Input autoFocus={false} defaultValue={cryptoItem.Address} readOnly />
+                  <Input
+                    autoFocus={false}
+                    defaultValue={cryptoItem.Address}
+                    readOnly
+                  />
                   <CopyToClipboard
                     onCopy={() => {
-                      const newIsCopiedList = Config.Sponsor?.Crypto?.map(() => false) ?? [];
+                      const newIsCopiedList =
+                        Config.Sponsor?.Crypto?.map(() => false) ?? [];
                       newIsCopiedList[cryptoItemIndex] = true;
                       setIsCopiedList(newIsCopiedList);
                     }}
@@ -153,7 +180,11 @@ export const SponsorBoard = () => {
                       type="submit"
                     >
                       <span className="sr-only">{"Copy"}</span>
-                      {isCopiedList[cryptoItemIndex] ? <FaCheck className="h-4 w-4" /> : <FaCopy className="h-4 w-4" />}
+                      {isCopiedList[cryptoItemIndex] ? (
+                        <FaCheck className="h-4 w-4" />
+                      ) : (
+                        <FaCopy className="h-4 w-4" />
+                      )}
                     </Button>
                   </CopyToClipboard>
                 </div>

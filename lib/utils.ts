@@ -12,7 +12,11 @@ export function cn(...inputs: ClassValue[]) {
  * @param pageNumber The current page number.
  * @returns A new array contains elements of specified page.
  */
-export function paginateArray<T = any>(array: T[], pageSize: number, pageNumber: number) {
+export function paginateArray<T = any>(
+  array: T[],
+  pageSize: number,
+  pageNumber: number,
+) {
   if (array.length === 0) return [];
   if (pageSize < 1) return [];
   if (pageNumber < 1) return [];
@@ -32,7 +36,9 @@ export function paginateArray<T = any>(array: T[], pageSize: number, pageNumber:
  * @param value Possible string input.
  * @returns return `null` if the input belongs to "", undefined and null.
  */
-export function nullifyEmptyString(value: string | null | undefined): string | null {
+export function nullifyEmptyString(
+  value: string | null | undefined,
+): string | null {
   if (isEmptyString(value)) {
     return null;
   }
@@ -83,23 +89,11 @@ export function isEmptyArray(value: any[] | null | undefined): boolean {
  * @param value - The array value to be nullified if empty.
  * @returns The nullified array if it is empty, otherwise returns the original array.
  */
-export function nullifyEmptyArray<T>(value: T[] | null | undefined): T[] | null {
+export function nullifyEmptyArray<T>(
+  value: T[] | null | undefined,
+): T[] | null {
   if (isEmptyArray(value)) {
     return null;
   }
   return value!;
-}
-
-/**
- * Capitalizes the first letter of each word in a string.
- *
- * @param str - The input string.
- * @returns The string with the first letter of each word capitalized.
- */
-export function capitalizeFirstLetter(str: string) {
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }

@@ -1,5 +1,13 @@
 import type { TPostTOCItem } from "@/types/docs.type";
-import { JSDOM } from "jsdom";
+
+const decodeHtml = (text: string) =>
+  text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
 
 /**
  * Generate the Table Of Content List by html code.
@@ -8,16 +16,23 @@ import { JSDOM } from "jsdom";
  * @returns
  */
 export const makeTOCTree = (htmlCode: string) => {
-  const doc_dom = new JSDOM(htmlCode);
-  const all_headers = doc_dom.window.document.querySelectorAll("h1,h2,h3,h4,h5,h6");
   const result: TPostTOCItem[] = [];
-  for (let i = 0; i < all_headers.length; i++) {
-    const level = Number.parseInt(all_headers[i].tagName.replace("H", ""));
+
+  const headingRegex = /<h([1-6])\b([^>]*)>([\s\S]*?)<\/h\1>/gi;
+
+  for (const match of htmlCode.matchAll(headingRegex)) {
+    const level = Number.parseInt(match[1], 10);
+    const attrs = match[2] ?? "";
+    const rawTitle = match[3] ?? "";
+    const anchorId = attrs.match(/\sid=["']([^"']+)["']/i)?.[1] ?? "";
+    const title = decodeHtml(rawTitle.replace(/<[^>]+>/g, "").trim());
+
     result.push({
-      level: level,
-      anchorId: all_headers[i].id,
-      title: all_headers[i].textContent!,
+      level,
+      anchorId,
+      title,
     });
   }
+
   return result;
 };

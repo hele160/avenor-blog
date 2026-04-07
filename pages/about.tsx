@@ -1,61 +1,106 @@
-import { Introduction } from "@/components/about-page/Introduction";
-import { Separator } from "@/components/ui/separator";
 import { Footer } from "@/components/utils/Footer";
 import { ContentContainer, Page } from "@/components/utils/Layout";
 import { NavBar } from "@/components/utils/NavBar";
-import { PageTitle } from "@/components/utils/PageTitle";
 import { SEO } from "@/components/utils/SEO";
-import { SocialIcons } from "@/components/utils/SocialIcons";
 import { Config } from "@/data/config";
-
-import Link from "next/link";
+import { AboutCardItem } from "@/components/utils/AboutCardItem";
+import { aboutPageConfig } from "@/data/about";
+import { useEffect } from "react";
 
 export default function AboutPage() {
+  const [socialSection, stackSection, hobbySection] = aboutPageConfig.sections;
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   return (
     <Page>
       <SEO
         coverURL={Config.PageCovers.websiteCoverURL}
-        description={"Type your brief self-introduction in a sentence here make SEO recognize it easily."}
-        title={`About Me - ${Config.AuthorName}`}
+        description={"了解博主的背景、技术栈、联系方式与这个站点的设计理念。"}
+        title="关于"
       />
       <NavBar />
       <ContentContainer>
-        <PageTitle>{"ABOUT ME"}</PageTitle>
-        <Separator />
-        <Introduction />
-        <Separator />
-        <SocialIcons />
-        <Separator />
+        <section className="about-page-wrap">
+          <div className="about-grid-top">
+            <article className="about-card about-intro-card">
+              <img
+                alt={aboutPageConfig.introCard.avatarAlt}
+                className="about-avatar"
+                src={aboutPageConfig.introCard.avatarSrc}
+              />
+              <h2 className="about-intro-title">
+                {aboutPageConfig.introCard.greetingText}
+                <span>{aboutPageConfig.introCard.greetingName}</span>
+              </h2>
+              {aboutPageConfig.introCard.introParagraphs.map((paragraph) => (
+                <p className="about-intro-text" key={paragraph}>
+                  {paragraph}
+                </p>
+              ))}
+            </article>
 
-        <ul className="mx-auto my-10 list-disc px-5 md:w-2/3">
-          {Config.SocialLinks.github && (
-            <li className="my-2">
-              {"📕 Check out my github profile at "}
-              <Link className="underline" href={`https://github.com/${Config.SocialLinks.github}`} target="_blank">
-                Github
-              </Link>
-            </li>
-          )}
-          <li className="my-2">🖥️ Programming stack: TypeScript, JavaScript, C++, C, Rust, Go and so on.</li>
-          <li className="my-2">🤝 I am looking for friends who are fund of XXXX</li>
-          {Config.SocialLinks.twitter && (
-            <li className="my-2">
-              {"📫 How to reach me on Twitter: "}
-              <Link className="link" href={`https://twitter.com/${Config.SocialLinks.twitter}`} target="_blank">
-                {Config.SocialLinks.twitter}
-              </Link>
-            </li>
-          )}
-          <li className="my-2">Language : 汉语 / English / 한국어 / 日本語 </li>
-          <li className="my-2">Gender Identity : Male / Female / MTF / FTM / And Others </li>
-          <li className="my-2">From : Your Country, State / Province</li>
-        </ul>
+            <article className="about-card">
+              <h3 className="about-card-title">
+                {aboutPageConfig.conceptCard.title}
+              </h3>
+              {aboutPageConfig.conceptCard.paragraphs.map((paragraph) => (
+                <p className="about-card-text" key={paragraph}>
+                  {paragraph}
+                </p>
+              ))}
+            </article>
+          </div>
 
-        <div className="mx-auto my-10 font-bold md:w-2/3">
-          {
-            "** In addition to the above content, you can also add other customized components, content, etc. to this page. **"
-          }
-        </div>
+          <div className="about-grid-mid">
+            <article className="about-card">
+              <h3 className="about-card-title">{socialSection.title}</h3>
+              <div className="about-link-list">
+                {socialSection.items.map((item) => (
+                  <AboutCardItem
+                    key={item.label}
+                    type="link"
+                    label={item.label}
+                    href={item.href}
+                  />
+                ))}
+              </div>
+            </article>
+
+            <article className="about-card">
+              <h3 className="about-card-title">{stackSection.title}</h3>
+              <div className="about-chip-list">
+                {stackSection.items.map((item) => (
+                  <AboutCardItem
+                    key={item.label}
+                    type="chip"
+                    label={item.label}
+                  />
+                ))}
+              </div>
+            </article>
+
+            <article className="about-card">
+              <h3 className="about-card-title">{hobbySection.title}</h3>
+              <div className="about-chip-list">
+                {hobbySection.items.map((item) => (
+                  <AboutCardItem
+                    key={item.label}
+                    type="chip"
+                    label={item.label}
+                  />
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
       </ContentContainer>
       <Footer />
     </Page>

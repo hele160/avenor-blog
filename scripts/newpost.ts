@@ -2,10 +2,15 @@ import { PostFilesDirectory } from "@/consts/consts";
 import { getCurrentTime } from "@/lib/date";
 import { stringifyFrontmatter } from "@/lib/frontmatter";
 import type { TPostFrontmatter } from "@/types/docs.type";
-import { type ChildProcessWithoutNullStreams, type SpawnSyncReturns, spawn, spawnSync } from "child_process";
+import {
+  type ChildProcessWithoutNullStreams,
+  type SpawnSyncReturns,
+  spawn,
+  spawnSync,
+} from "child_process";
 import colors from "colors";
 import fs from "fs";
-import inquirer, { type QuestionCollection } from "inquirer";
+import inquirer from "inquirer";
 import _ from "lodash";
 import path from "path";
 import { titleCase } from "title-case";
@@ -19,12 +24,13 @@ type TAnswer = {
   inputAllowShare: boolean;
 };
 
-const questions: QuestionCollection<TAnswer> = [
+const questions = [
   {
     type: "input",
     name: "inputTitle",
     message: "What's the title? (Required)",
-    validate: (input: string) => (input.trim() === "" ? "Please enter a title." : true),
+    validate: (input: string) =>
+      input.trim() === "" ? "Please enter a title." : true,
   },
   {
     type: "input",
@@ -34,7 +40,8 @@ const questions: QuestionCollection<TAnswer> = [
   {
     type: "input",
     name: "inputTags",
-    message: "Assign tags for the posts and separate them with commas. (Required, default: others)",
+    message:
+      "Assign tags for the posts and separate them with commas. (Required, default: others)",
   },
   {
     type: "confirm",
@@ -64,13 +71,20 @@ const writePostFile = (filePath: string, content: string): void => {
     }
 
     console.log(colors.green(colors.bold("Create Post Succeed.")));
-    console.log(`Open the file ${colors.cyan(filePath)} to write your blog now.`);
-    console.log("Some fields, such as summary, need to be filled in by yourself after opening the file.");
+    console.log(
+      `Open the file ${colors.cyan(filePath)} to write your blog now.`,
+    );
+    console.log(
+      "Some fields, such as summary, need to be filled in by yourself after opening the file.",
+    );
   });
 };
 
 const openPostFile = (filePath: string) => {
-  const openFileCommand: Record<string, () => ChildProcessWithoutNullStreams | SpawnSyncReturns<Buffer>> = {
+  const openFileCommand: Record<
+    string,
+    () => ChildProcessWithoutNullStreams | SpawnSyncReturns<Buffer>
+  > = {
     win32: () => spawn("cmd", ["/c", "start", filePath]),
     darwin: () => spawnSync("open", [filePath]),
     linux: () => spawnSync("xdg-open", [filePath]),
@@ -120,7 +134,9 @@ inquirer.prompt<TAnswer>(questions).then((answers) => {
 
   // Output the new post file
   const postFileName = `${year}-${month}-${day}-${_.kebabCase(answers.inputTitle)}.md`;
-  const postFilePath = path.resolve(path.join(PostFilesDirectory, postFileName));
+  const postFilePath = path.resolve(
+    path.join(PostFilesDirectory, postFileName),
+  );
 
   writePostFile(postFilePath, `${stringifiedFrontmatter}\n`);
   openPostFile(postFilePath);

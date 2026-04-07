@@ -1,4 +1,4 @@
-import { cutForSearch } from "@node-rs/jieba";
+import { Jieba } from "@node-rs/jieba";
 import Colors from "colors";
 import minisearch from "minisearch";
 import sizeof from "object-sizeof";
@@ -10,8 +10,13 @@ import { getPostFileContent, sortedPosts } from "./post-process";
 const NonCJKLRecognizeRegex =
   /[^\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af\u1100-\u11ff\u3130-\u318f\u31c0-\u31ef\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u0041-\u005a\u0061-\u007a\u00c0-\u00ff\u0100-\u017f\u0180-\u024f\s ]/g;
 
+const jieba = new Jieba();
+
 function tokenizer(str: string) {
-  const result = cutForSearch(str.replace(NonCJKLRecognizeRegex, " "), true);
+  const result = jieba.cutForSearch(
+    str.replace(NonCJKLRecognizeRegex, " "),
+    true,
+  );
   for (let i = 0; i < result.length; i++) {
     if (result[i].trim() === "") {
       result.splice(i, 1);

@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { FaCheck } from "react-icons/fa";
 import { IoCopyOutline } from "react-icons/io5";
 import { Button } from "../ui/button";
 
-const PreWrapper = ({ children }: { children: JSX.Element }) => {
-  const textInput = useRef(null);
+const PreWrapper = ({ children }: { children: ReactElement }) => {
+  const textInput = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -17,8 +17,9 @@ const PreWrapper = ({ children }: { children: JSX.Element }) => {
   };
   const onCopy = () => {
     setCopied(true);
-    //@ts-ignore
-    textInput.current && navigator.clipboard.writeText(textInput.current.textContent);
+    if (textInput.current != null) {
+      navigator.clipboard.writeText(textInput.current.textContent ?? "");
+    }
   };
 
   return (

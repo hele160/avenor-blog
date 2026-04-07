@@ -11,7 +11,7 @@ import { FriendsList } from "@/data/friends";
 export default function FriendsPage() {
   return (
     <Page>
-      <SEO description={"My Friend Links"} title={`${Config.SiteTitle} - Friends`} />
+      <SEO description={"My Friend Links"} title="友链" />
       <NavBar />
       <ContentContainer>
         <PageTitle>{"FRIENDS"}</PageTitle>

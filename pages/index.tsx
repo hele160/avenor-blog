@@ -1,5 +1,4 @@
 import { HomeCover } from "@/components/home-page/HomeCover";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Footer } from "@/components/utils/Footer";
 import { ContentContainer, Page } from "@/components/utils/Layout";
@@ -13,11 +12,8 @@ import { generateRSSFeed } from "@/lib/rss";
 import type { TPostListItem } from "@/types/docs.type";
 import type { GetStaticProps } from "next";
 import Link from "next/link";
-import { LuPenTool } from "react-icons/lu";
-import { RiStarFill } from "react-icons/ri";
 
 type HomePageProps = {
-  pinnedPostList: TPostListItem[];
   latestPostList: TPostListItem[];
 };
 
@@ -27,39 +23,28 @@ export default function Home(props: HomePageProps) {
       <SEO
         coverURL={Config.PageCovers.websiteCoverURL}
         description={`Welcome to the ${Config.Nickname}'s blog website. It's the website for recording thoughts for technology, life experience and so on.`}
-        title={`${Config.SiteTitle} - The personal blog for ${Config.Nickname}`}
+        title="首页"
       />
       <NavBar />
       <ContentContainer>
         <HomeCover />
-        {props.pinnedPostList.length !== 0 && (
-          <div>
-            <Separator />
-            <h2 className={"caption-font my-5 flex justify-center font-bold text-2xl"}>
-              <RiStarFill className="mx-2 my-auto" />
-              {"PINNED POSTS"}
-            </h2>
-            <Separator />
-            <PostList data={props.pinnedPostList} />
-          </div>
-        )}
         {props.latestPostList.length !== 0 && (
           <div>
-            <Separator />
-            <h2 className={"caption-font my-5 flex justify-center font-bold text-2xl"}>
-              <LuPenTool className="mx-2 my-auto" />
-              {"LATEST POSTS"}
-            </h2>
-            <Separator />
-            <PostList data={props.latestPostList} />
-            <Separator />
-            <div className="my-5 flex justify-end">
-              <Button asChild>
-                <Link className="font-bold" href="/posts">
-                  {"MORE POSTS >"}
+            <div className="mx-auto w-full max-w-[880px]">
+              <div className="my-5 flex items-center justify-between px-5">
+                <h2 className="font-bold text-[18px] text-[#1c2a35] dark:text-white">
+                  {"最新文章"}
+                </h2>
+                <Link
+                  className="text-[14px] font-medium text-[#5a6a75] transition-colors hover:text-[#43535f] dark:text-white dark:hover:text-slate-200"
+                  href="/posts"
+                >
+                  {"全部文章 ->"}
                 </Link>
-              </Button>
+              </div>
+              <Separator className="mb-4" />
             </div>
+            <PostList data={props.latestPostList} />
           </div>
         )}
       </ContentContainer>
@@ -69,10 +54,14 @@ export default function Home(props: HomePageProps) {
 }
 
 export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
-  const pinnedPostList = sortedPosts.pinnedPostList;
+  const isProduction = process.env.NODE_ENV === "production";
   const latestPostList = [];
 
-  for (let i = 0, j = 0; j < LatestPostCountInHomePage && i < sortedPosts.allPostList.length; i++) {
+  for (
+    let i = 0, j = 0;
+    j < LatestPostCountInHomePage && i < sortedPosts.allPostList.length;
+    i++
+  ) {
     const postListItem = sortedPosts.allPostList[i];
     if (!postListItem.frontMatter.noPrompt) {
       latestPostList.push(postListItem);
@@ -80,13 +69,14 @@ export const getStaticProps: GetStaticProps<HomePageProps> = async () => {
     }
   }
 
-  if (Config.RSSFeed?.enabled) {
+  // RSS generation is expensive and in dev it runs on each request,
+  // which makes client-side navigation feel very slow.
+  if (Config.RSSFeed?.enabled && isProduction) {
     await generateRSSFeed();
   }
 
   return {
     props: {
-      pinnedPostList: pinnedPostList,
       latestPostList: latestPostList,
     },
   };

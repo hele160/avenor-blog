@@ -16,7 +16,7 @@ export default function SponsorPage() {
         description={
           "If you like my works, I would deeply appreciate your support as a patron. Your contribution not only fuels my creative journey but also allows me to delve deeper into my passion."
         }
-        title={`${Config.SiteTitle} - Sponsor Me`}
+        title="赞助"
       />
       <Toaster />
       <NavBar />

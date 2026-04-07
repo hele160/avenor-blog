@@ -2,11 +2,11 @@ import type { TConfig } from "@/types/config.type";
 
 export const Config: TConfig = {
   // Image url for avatar.
-  AvatarURL: "/images/avatar.webp",
+  AvatarURL: "/images/avatar.png",
   // Your favorite motto, or a brief self-introduction, for homepage display
-  Sentence: "L'homme est né libre, et partout il est dans les fers.",
+  Sentence: "There is a crack in everything, that's how the light gets in.",
   // Your nickname, or pen name here.
-  Nickname: "John Doe",
+  Nickname: "avenor",
 
   // Website main title.
   SiteTitle: "LEXICAL BLOG",
@@ -15,7 +15,7 @@ export const Config: TConfig = {
 
   // For the cover image displayed on the homepage, the recommended image aspect ratio is 4:1.
   PageCovers: {
-    websiteCoverURL: "/images/cover.webp",
+    websiteCoverURL: "/images/cover.png",
   },
 
   // Your social platform IDs, and email address.
@@ -84,5 +84,5 @@ export const Config: TConfig = {
   // Website establishment year.
   YearStart: "2023",
   // Please enter your legal name for use with the copyright mark.
-  AuthorName: "JOHN DOE",
+  AuthorName: "avenor",
 };
