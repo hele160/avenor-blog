@@ -12,8 +12,8 @@
     "url": "https://github.com/hele160"
   },
   "scripts": {
-    "dev": "next dev",
-    "dev:3000": "next dev -p 3000",
+    "dev": "next dev --webpack",
+    "dev:3000": "next dev --webpack -p 3000",
     "dev:turbo": "npx turbo dev",
     "build:turbo": "npx turbo build",
     "build": "next build",

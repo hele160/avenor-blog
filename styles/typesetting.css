@@ -8,6 +8,9 @@
  dark:prose-invert
 
   prose-headings:scroll-mt-20
+  prose-h1:text-3xl
+  prose-h1:leading-tight
+  prose-h1:mb-2
 
   prose-a:text-sky-800
   prose-a:decoration-dashed

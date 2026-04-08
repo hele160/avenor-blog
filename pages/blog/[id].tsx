@@ -49,6 +49,7 @@ type ReaderPageProps = {
 };
 
 type PostRenderCacheValue = {
+  rawSource: string;
   compiledSource: MDXRemoteSerializeResult;
   tocList: TPostTOCItem[];
 };
@@ -141,12 +142,17 @@ export const getStaticProps: GetStaticProps<ReaderPageProps> = async (
     return { notFound: true };
   }
 
+  const normalizedSource = source.replace(
+    /!\[([^\]]*)\]\((assets\/.+?\.(?:png|jpe?g|gif|webp|svg|avif))\)/gi,
+    "![$1](<$2>)",
+  );
+
   let mdxSource: MDXRemoteSerializeResult;
   let tocList: TPostTOCItem[];
 
   const cached = !isProduction ? postRenderCache.get(postId) : null;
 
-  if (cached != null) {
+  if (cached != null && cached.rawSource === normalizedSource) {
     mdxSource = cached.compiledSource;
     tocList = cached.tocList;
   } else {
@@ -163,7 +169,7 @@ export const getStaticProps: GetStaticProps<ReaderPageProps> = async (
       () => rehypeHighlight({ detect: isProduction }),
     ];
 
-    mdxSource = await serialize(source, {
+    mdxSource = await serialize(normalizedSource, {
       parseFrontmatter: true,
       mdxOptions: {
         remarkPlugins: [remarkMath, remarkGfm],
@@ -172,10 +178,11 @@ export const getStaticProps: GetStaticProps<ReaderPageProps> = async (
       },
     });
 
-    tocList = makeTOCTree(source);
+    tocList = makeTOCTree(normalizedSource);
 
     if (!isProduction) {
       postRenderCache.set(postId, {
+        rawSource: normalizedSource,
         compiledSource: mdxSource,
         tocList,
       });

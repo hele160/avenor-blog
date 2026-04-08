@@ -36,7 +36,7 @@ export const PostRender = (props: {
         )}
         <div
           className={
-            "caption-font my-2 flex justify-center whitespace-normal break-words font-bold text-[1.65rem] text-black leading-[2.1rem] dark:text-white"
+            "caption-font my-2 flex justify-start text-left whitespace-normal break-words font-bold text-[1.65rem] text-black leading-[2.1rem] dark:text-white"
           }
         >
           {props.frontMatter?.title}

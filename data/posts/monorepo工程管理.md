@@ -214,7 +214,7 @@ export default { extends: ['@commitlint/config-conventional'] };
 > 要安装一下@commitlint/config-conventional 官方自带的提交规范。
 >
 
-![image (3)](assets/monorepo工程管理/image (3).png)
+![](assets/monorepo工程管理/image (3).png)
 
 为了适配中文，可以在官方配置的基础上，配置`.czvinylrc` ：
 
