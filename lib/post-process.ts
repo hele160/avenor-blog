@@ -20,7 +20,7 @@ async function extractFrontmatters(
     Array.isArray(frontmatter.tags) ? frontmatter.tags : []
   )
     ?.filter((tagname) => !isEmptyString(tagname))
-    .map((tagname) => tagname.toUpperCase());
+    .map((tagname) => tagname);
 
   const normalizedResult: TPostFrontmatter = {
     title: titleCase(String(frontmatter.title ?? "")),
