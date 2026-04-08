@@ -5,19 +5,27 @@ import type {
   TPostTOCItem,
 } from "@/types/docs.type";
 import { nanoid } from "nanoid";
-import { MDXRemote, type MDXRemoteSerializeResult } from "next-mdx-remote";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeExternalLinks from "rehype-external-links";
+import rehypeHighlight from "rehype-highlight";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import { PostDate } from "../utils/PostDate";
 
 export const PostRender = (props: {
-  compiledSource: MDXRemoteSerializeResult;
+  source: string;
   tocList: TPostTOCItem[];
   frontMatter: TPostFrontmatter;
   postId: string;
   nextPostListItem: TPostListItem | null;
   prevPostListItem: TPostListItem | null;
 }) => {
-  const compiledSource = props.compiledSource;
+  const source = props.source;
   return (
     <div className="typesetting">
       <div>
@@ -51,7 +59,7 @@ export const PostRender = (props: {
           </div>
         )}
         <PostDate
-          className="my-1 flex justify-start text-sm italic"
+          className="my-1 flex justify-start text-sm"
           date={props.frontMatter?.time}
         />
         {props.frontMatter?.summary && (
@@ -68,14 +76,28 @@ export const PostRender = (props: {
         className={`text-wrap border-gray-500 content-font ${!props.frontMatter.allowShare ? "select-none" : ""}`}
         // {...handleLeftSwipe}
       >
-        {compiledSource && (
-          <MDXRemote
-            compiledSource={compiledSource.compiledSource}
-            // @ts-ignore
+        {source && (
+          <ReactMarkdown
             components={MDXComponentsSet}
-            frontmatter={compiledSource.frontmatter}
-            scope={compiledSource.scope}
-          />
+            rehypePlugins={[
+              rehypeRaw,
+              [
+                rehypeExternalLinks,
+                { rel: ["noopener", "noreferrer"], target: "_blank" },
+              ],
+              rehypeKatex,
+              rehypeAutolinkHeadings,
+              rehypeSlug,
+              [
+                rehypeHighlight,
+                { detect: process.env.NODE_ENV === "production" },
+              ],
+            ]}
+            remarkPlugins={[remarkMath, remarkGfm]}
+            remarkRehypeOptions={{ allowDangerousHtml: true }}
+          >
+            {source}
+          </ReactMarkdown>
         )}
       </div>
     </div>

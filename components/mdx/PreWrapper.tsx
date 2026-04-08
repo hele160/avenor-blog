@@ -1,9 +1,10 @@
-import { type ReactElement, useRef, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { useRef, useState } from "react";
 import { FaCheck } from "react-icons/fa";
 import { IoCopyOutline } from "react-icons/io5";
 import { Button } from "../ui/button";
 
-const PreWrapper = ({ children }: { children: ReactElement }) => {
+const PreWrapper = ({ children }: ComponentPropsWithoutRef<"pre">) => {
   const textInput = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -46,7 +47,7 @@ const PreWrapper = ({ children }: { children: ReactElement }) => {
         translate="no"
         className="flat-scrollbar-normal not-prose rounded-md bg-[#F6F8FA] p-2 text-sm selection:bg-gray-300 selection:text-inherit dark:bg-[#0d1117] dark:selection:bg-gray-700"
       >
-        {children}
+        {children as ReactNode}
       </pre>
     </div>
   );

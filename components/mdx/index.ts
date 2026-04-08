@@ -4,8 +4,9 @@ import ImageWrapper from "./ImageWrapper";
 import PreWrapper from "./PreWrapper";
 import Span from "./Span";
 import TableWrapper from "./TableWrapper";
+import type { Components } from "react-markdown";
 
-export const MDXComponentsSet = {
+export const MDXComponentsSet: Components = {
   pre: PreWrapper,
   table: TableWrapper,
   img: ImageWrapper,

@@ -88,8 +88,16 @@
   }
 }
 
-* {
-  @apply selection:bg-black selection:text-white dark:selection:bg-gray-500 dark:selection:text-black;
+*::selection {
+  background-color: rgba(125, 211, 252, 0.42);
+  color: #0f172a;
+  text-shadow: none;
+}
+
+.dark *::selection {
+  background-color: rgba(107, 114, 128, 0.7);
+  color: #111827;
+  text-shadow: none;
 }
 
 ::view-transition-old(root),

@@ -6,16 +6,18 @@ import {
 } from "@/consts/consts";
 import { Config } from "@/data/config";
 import { Feed } from "feed";
-import { MDXRemote } from "next-mdx-remote";
-import { serialize } from "next-mdx-remote/serialize";
-import { renderToString } from "react-dom/server";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeMathJax from "rehype-mathjax/svg";
 import rehypeExternalLinks from "rehype-external-links";
 import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
+import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import remarkParse from "remark-parse";
+import remarkRehype from "remark-rehype";
+import { unified } from "unified";
+import matter from "gray-matter";
 import { getPostFileContent, sortedPosts } from "./post-process";
 
 const NoticeForRSSReaders = (postId: string) => `
@@ -60,29 +62,29 @@ export const generateRSSFeed = async () => {
     i++
   ) {
     const post = sortedPosts.allPostList[i];
-    const postFileContent = `${getPostFileContent(post.id)}${NoticeForRSSReaders(post.id)}`;
+    const rawPostFileContent = getPostFileContent(post.id) ?? "";
+    const postFileContent = `${matter(rawPostFileContent).content}${NoticeForRSSReaders(post.id)}`;
     const dateNumber = post.frontMatter.time
       .split("-")
       .map((num: string) => Number.parseInt(num));
-    const mdxSource = await serialize(postFileContent ?? "", {
-      parseFrontmatter: true,
-      mdxOptions: {
-        remarkPlugins: [remarkMath, remarkGfm],
-        rehypePlugins: [
-          rehypeRaw,
-          [
-            rehypeExternalLinks,
-            { rel: ["noopener", "noreferrer"], target: "_blank" },
-          ],
-          rehypeMathJax,
-          rehypeAutolinkHeadings,
-          rehypeSlug,
-        ],
-        format: "md",
-      },
-    });
     const htmlContent = minifyHTMLCode(
-      renderToString(<MDXRemote {...mdxSource} />),
+      String(
+        await unified()
+          .use(remarkParse)
+          .use(remarkMath)
+          .use(remarkGfm)
+          .use(remarkRehype, { allowDangerousHtml: true })
+          .use(rehypeRaw)
+          .use(rehypeExternalLinks, {
+            rel: ["noopener", "noreferrer"],
+            target: "_blank",
+          })
+          .use(rehypeMathJax)
+          .use(rehypeAutolinkHeadings)
+          .use(rehypeSlug)
+          .use(rehypeStringify, { allowDangerousHtml: true })
+          .process(postFileContent),
+      ),
     );
 
     feed.addItem({

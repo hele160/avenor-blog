@@ -15,21 +15,10 @@ import type {
   TPostListItem,
   TPostTOCItem,
 } from "@/types/docs.type";
+import matter from "gray-matter";
 import dynamic from "next/dynamic";
 import type { GetStaticPaths, GetStaticProps } from "next";
-import { type MDXRemoteSerializeResult } from "next-mdx-remote";
-import { serialize } from "next-mdx-remote/serialize";
-import rehypeAutolinkHeadings from "rehype-autolink-headings";
-import rehypeExternalLinks from "rehype-external-links";
-import rehypeHighlight from "rehype-highlight";
-import rehypeKatex from "rehype-katex";
-import rehypePresetMinify from "rehype-preset-minify";
-import rehypeRaw from "rehype-raw";
-import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import { titleCase } from "title-case";
-import type { PluggableList } from "unified";
 
 const DrawerTOC = dynamic(
   () =>
@@ -40,7 +29,7 @@ const DrawerTOC = dynamic(
 );
 
 type ReaderPageProps = {
-  compiledSource: MDXRemoteSerializeResult;
+  source: string;
   tocList: TPostTOCItem[];
   frontMatter: TPostFrontmatter;
   postId: string;
@@ -50,7 +39,7 @@ type ReaderPageProps = {
 
 type PostRenderCacheValue = {
   rawSource: string;
-  compiledSource: MDXRemoteSerializeResult;
+  source: string;
   tocList: TPostTOCItem[];
 };
 
@@ -82,13 +71,14 @@ const ReaderPage = (props: ReaderPageProps) => {
       <Toaster />
       <NavBar />
       <ContentContainer>
-        <div className="mx-auto flex w-full max-w-[1180px] items-start gap-6 py-5">
-          <div className="mx-auto min-w-0 w-full max-w-[50rem] flex flex-col justify-center">
+        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 py-5 lg:grid-cols-[190px_minmax(0,50rem)_190px] lg:gap-x-6">
+          <div className="hidden lg:block" />
+          <div className="mx-auto min-w-0 w-full max-w-[50rem] flex flex-col justify-center lg:mx-0">
             {props.frontMatter.coverURL && (
               <PostCover coverURL={props.frontMatter.coverURL} />
             )}
             <PostRender
-              compiledSource={props.compiledSource}
+              source={props.source}
               tocList={props.tocList}
               frontMatter={props.frontMatter}
               postId={props.postId}
@@ -101,7 +91,7 @@ const ReaderPage = (props: ReaderPageProps) => {
               nextPostListItem={props.nextPostListItem}
             />
           </div>
-          <aside className="hidden w-[190px] shrink-0 lg:block">
+          <aside className="hidden w-[190px] lg:block">
             <TOC data={props.tocList} />
           </aside>
         </div>
@@ -142,48 +132,30 @@ export const getStaticProps: GetStaticProps<ReaderPageProps> = async (
     return { notFound: true };
   }
 
-  const normalizedSource = source.replace(
+  const markdownContent = matter(source).content;
+
+  const normalizedSource = markdownContent.replace(
     /!\[([^\]]*)\]\((assets\/.+?\.(?:png|jpe?g|gif|webp|svg|avif))\)/gi,
     "![$1](<$2>)",
   );
 
-  let mdxSource: MDXRemoteSerializeResult;
+  let sourceForRender: string;
   let tocList: TPostTOCItem[];
 
   const cached = !isProduction ? postRenderCache.get(postId) : null;
 
   if (cached != null && cached.rawSource === normalizedSource) {
-    mdxSource = cached.compiledSource;
+    sourceForRender = cached.source;
     tocList = cached.tocList;
   } else {
-    const rehypePlugins: PluggableList = [
-      rehypeRaw,
-      [
-        rehypeExternalLinks,
-        { rel: ["noopener", "noreferrer"], target: "_blank" },
-      ],
-      rehypeKatex,
-      rehypeAutolinkHeadings,
-      rehypeSlug,
-      ...(isProduction ? (rehypePresetMinify.plugins ?? []) : []),
-      () => rehypeHighlight({ detect: isProduction }),
-    ];
-
-    mdxSource = await serialize(normalizedSource, {
-      parseFrontmatter: true,
-      mdxOptions: {
-        remarkPlugins: [remarkMath, remarkGfm],
-        rehypePlugins,
-        format: "md",
-      },
-    });
+    sourceForRender = normalizedSource;
 
     tocList = makeTOCTree(normalizedSource);
 
     if (!isProduction) {
       postRenderCache.set(postId, {
         rawSource: normalizedSource,
-        compiledSource: mdxSource,
+        source: sourceForRender,
         tocList,
       });
     }
@@ -208,7 +180,7 @@ export const getStaticProps: GetStaticProps<ReaderPageProps> = async (
 
   return {
     props: {
-      compiledSource: mdxSource,
+      source: sourceForRender,
       tocList: tocList,
       frontMatter: frontMatter,
       postId: postId,

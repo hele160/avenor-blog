@@ -6,7 +6,7 @@ import type {
   TPostListItem,
   TPostsByTag,
 } from "@/types/docs.type";
-import { serialize } from "next-mdx-remote/serialize";
+import matter from "gray-matter";
 import { titleCase } from "title-case";
 import { isEmptyString, nullifyEmptyArray, nullifyEmptyString } from "./utils";
 
@@ -14,23 +14,27 @@ async function extractFrontmatters(
   filepath: string,
 ): Promise<TPostFrontmatter> {
   const source = fs.readFileSync(filepath, "utf-8");
-  const mdxSource = await serialize(source, {
-    parseFrontmatter: true,
-    mdxOptions: { format: "md" },
-  });
-  const frontmatter = mdxSource.frontmatter as TPostFrontmatter;
+  const frontmatter = matter(source).data as Partial<TPostFrontmatter>;
 
-  const normalizedTags = frontmatter.tags
+  const normalizedTags = (
+    Array.isArray(frontmatter.tags) ? frontmatter.tags : []
+  )
     ?.filter((tagname) => !isEmptyString(tagname))
     .map((tagname) => tagname.toUpperCase());
 
   const normalizedResult: TPostFrontmatter = {
-    title: titleCase(frontmatter.title),
-    subtitle: nullifyEmptyString(frontmatter.subtitle),
-    coverURL: nullifyEmptyString(frontmatter.coverURL),
+    title: titleCase(String(frontmatter.title ?? "")),
+    subtitle: nullifyEmptyString(
+      typeof frontmatter.subtitle === "string" ? frontmatter.subtitle : null,
+    ),
+    coverURL: nullifyEmptyString(
+      typeof frontmatter.coverURL === "string" ? frontmatter.coverURL : null,
+    ),
     tags: nullifyEmptyArray(normalizedTags),
-    summary: nullifyEmptyString(frontmatter.summary),
-    time: frontmatter.time,
+    summary: nullifyEmptyString(
+      typeof frontmatter.summary === "string" ? frontmatter.summary : null,
+    ),
+    time: String(frontmatter.time ?? ""),
     pin: frontmatter.pin ?? false,
     noPrompt: frontmatter.noPrompt ?? false,
     allowShare: frontmatter.allowShare ?? true,
