@@ -1,11 +1,12 @@
 ---
-title: 'monorepo 工程管理'
-time: '2026-04-08'
-tags: ["前端工程化","monorepo"]
-summary: '关于学习 Monorepo 工程基础的记录'
+title: "monorepo & 工程化项目构建流程"
+time: "2026-04-08"
+tags: ["前端工程化", "monorepo"]
+summary: "关于学习 Monorepo 工程基础以及工程项目构建流程的记录"
 ---
 
 # 1. monorepo 介绍
+
 ![](assets/monorepo工程管理/image (1).png)
 
 这两个项目架构选择核心在于：**组件/模块之间的关联程度**。
@@ -14,19 +15,22 @@ summary: '关于学习 Monorepo 工程基础的记录'
 
 前端、后端、工具库分别占用独立的 Git 仓库，即一仓库对应一项目的模式，如果使用这种方式，一个业务库要引用一个编写的工具库，就需要将工具库通过 npm 发布然后再让业务库下载对应的依赖包来调用。这样会产生几个痛点：
 
-+ **发布依赖感**：如果开发了一个解析器库，必须先 `npm publish` 到网上，业务项目才能 `npm install` 更新。
-+ **调试低效**：修改一个底层 Bug，需要跨仓库操作，无法实时看到业务层的反馈。
-+ **版本冲突**：业务 A 可能用的是 `v1.0` 的库，业务 B 用的是 `v2.0`。当多个业务需要统一升级时，需要手动去每个仓库修改，容易导致运行结果不一致。
+- **发布依赖感**：如果开发了一个解析器库，必须先 `npm publish` 到网上，业务项目才能 `npm install` 更新。
+- **调试低效**：修改一个底层 Bug，需要跨仓库操作，无法实时看到业务层的反馈。
+- **版本冲突**：业务 A 可能用的是 `v1.0` 的库，业务 B 用的是 `v2.0`。当多个业务需要统一升级时，需要手动去每个仓库修改，容易导致运行结果不一致。
 
 ## 1.2 Monorepo 模式
 
 将关联性强的多个项目放在同一个 Git 仓库中管理。主要靠 **本地软链接**，通过 `pnpm workspace` 建立内部引用。主要用于组件库开发、复杂全栈业务、基建与 UI 分离的项目等。其好处在于：
 
-+ **本地零延迟调试**：工具包（如 `ast-parser`）直接链接到业务包（如 `editor`）的依赖列表中。修改源码，业务层立刻生效，无需发布到 npm。
-+ **依赖版本高度统一**：所有子项目共享根目录的配置（ESLint/TSConfig），强制使用相同版本的第三方依赖（如 React），消灭“版本不一致”导致的问题。
-+ **全栈类型共享**：前端和后端虽然两者在运行时没有联系，但可以在 Monorepo 中共享一套 **TS Interface**，这样可以同步类型和对应报错。
+- **本地零延迟调试**：工具包（如 `ast-parser`）直接链接到业务包（如 `editor`）的依赖列表中。修改源码，业务层立刻生效，无需发布到 npm。
+- **依赖版本高度统一**：所有子项目共享根目录的配置（ESLint/TSConfig），强制使用相同版本的第三方依赖（如 React），消灭“版本不一致”导致的问题。
+- **全栈类型共享**：前端和后端虽然两者在运行时没有联系，但可以在 Monorepo 中共享一套 **TS Interface**，这样可以同步类型和对应报错。
 
-# 2. 文件组织结构
+# 2. 项目开发流程
+
+文件结构：
+
 ```bash
 Project/
 ├── apps/           # 可运行的应用：能独立启动、有入口文件
@@ -47,25 +51,98 @@ Project/
 
 **面试可说**：在架构选型上，采用了基于 **pnpm workspace** 的 Monorepo 方案。我将目录严格划分为 `apps/`（业务应用层）和 `packages/`（底层基础设施层）。这里的核心原则是 **‘单向依赖约束’**：即只允许 `apps` 引用 `packages`，严禁反向引用或 `packages` 之间产生复杂的循环依赖。为了保证这种约束，我会结合 **ESLint (eslint-plugin-import)** 或 **Dependency Cruiser** 这种工具进行自动化检查。比如在开发 markdown 编辑器时，很纠结 eidtor 是否作为业务还是工具，如果放在 `apps`，它就无法被后续的博客系统复用；如果直接放 `packages`，在开发初期又缺乏运行环境。最终我决定将其抽离为 `packages/editor`，并在 `apps/` 下专门建立了一个 **play**项目。这样既能保证编辑器作为独立模块的纯粹性，又提供了一个隔离的开发环境。
 
-# 3. 规范统一化管理
-## 3.1 构建 monorepo
-+ 创建项目`monorepo` 文件夹
-+ 创建配置文件：` echo "" > pnpm-workspace.yaml`
+## 2.1 基础工程构建
+
+**第一步**：搭建项目骨架
+
+```bash
+# 1. 创建并进入根目录
+mkdir markdown-editor && cd markdown-editor
+
+# 2. 根目录初始化
+pnpm init -w # -w是--workspace-root的缩写
+
+# 3. 快速创建推荐的物理目录（monorepo特有结构层次）
+mkdir -p apps packages shared
+```
+
+> 1. `-w`(`--workspace-root` ) 只是为了在工程根目录初始化，这意味可以在任何文件下执行命令最后都会在根目录建立 package.json 文件；
+> 2. `-p`是为了在目录下创建多个子包时，当子包不存在是自动创建，存在也不会报错；
+> 3. 子包一般配置别名：@hele160/markdown-editor，这能有效避免与公网上的同名包冲突；
+
+**第二步**：monorepo 核心配置
+
+- 配置 `pnpm-workspace.yaml`
 
 ```yaml
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/**" # 增加双星号，支持更深的层级
+  - "packages/**"
+  - "shared/**"
 ```
 
-+ 初始化 package.json 文件：`pnpm --workspace-root init`或者`pnpm -w init`。
+- 配置`.npmrc`
 
-> 1. --workspace-root 只是为了在工程根目录初始化，这意味可以在任何文件下执行命令最后都会在根目录建立 package.json 文件；
-> 2. 子包一般配置别名：@hele160/markdown-editor，这能有效避免与公网上的同名包冲突；
->
+```toml
+# 强制要求使用 pnpm，防止团队成员误用 npm/yarn 导致 lock 文件混乱
+engine-strict=true
+```
 
-## 3.2 环境版本锁定
-在根目录的 package.json 配置文件添加：
+> **注意**：不要配置`shamefully-hoist=true `这一个命令，传统的 npm/yarn 都是扁平化的，一个依赖 A 可能会应用依赖 B，如果在项目中引入 B 依赖，然而 B 依赖并没有才 Package.json 文件中，这就是所谓的幽灵依赖，pnpm 成功解决了这个问题，它将所有的非 Package.json 中的依赖全部放在.pnpm 中进行统一管理，项目无法引入里面的包，如果配置这个参数，将这里的包提升至 node_modules 目录可以被引用，避免程序崩溃，但是这种操作有些得不偿失了。
+
+- 配置`turbo.json`
+
+> 需要先安装： `pnpm add -Dw turbo`
+
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "out/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}
+```
+
+第三步：全局文件配置
+
+- 配置`package.json`，将子包命令全由 Turbo 主导
+
+```json
+"scripts": {
+  "dev": "turbo dev",
+  "build": "turbo build",
+  "lint": "turbo lint",
+  "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+  "clean": "turbo clean && rm -rf node_modules"
+}
+```
+
+- 配置`.editorconfig`
+
+```json
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+```
+
+- 环境版本锁定
+
+配置根目录`package.json`
 
 ```json
 "engines": {
@@ -74,25 +151,26 @@ packages:
   },
 ```
 
-当使用低于 node 版本时会报错但还是**会下载相关依赖**，为了实现下载之前就报错，可以添加文件 `.npmrc`并且配置：
+## 2.2 静态防线配置
 
-```json
-shamefully-hoist=true
+### 2.2.1 TS 配置
+
+在 monorepo 工程架构中，TS 配置一般有 3 种模式：
+
+1. 完全分散：每个子包一份独立 `tsconfig`。适合包之间技术栈差异很大。
+2. 完全集中：根目录一份 tsconfig，子包几乎不写自己的。适合所有子包类型很一致、规模不大
+3. 混合式（最常用）：根目录放 tsconfig.base.json，统一通用规则；每个子包 extends 它，再覆盖自己的差异项。这样一规范 + 保留灵活性，维护成本最低。
+
+> 该 markdown 源码采用的是第一种形式，这种方式一旦项目多起来就会产生依赖的版本差异，这样维护成本会很大，而且会出现版本兼容错误，后续自己做的时候考虑第三种方案：**根基线 + 子包继承**。（**面试可说的点**）
+
+这里采用混合式配置：
+
+```bash
+# 根目录安装，子包不需要再安装了
+pnpm add  -D -w typescript @types/node
 ```
 
-## 3.3 TS 配置
-可以选用两种配置方式，一种是集中在根目录下配置，另外一种是通过在每一个子组件中分别进行配置。配置一般有 3 种模式：
-
-1. 完全分散：每个子包一份独立 tsconfig。适合包之间技术栈差异很大，比如 React 应用、Node 服务、库构建混在一起。
-2. 完全集中：根目录一份 tsconfig，子包几乎不写自己的。适合所有子包类型很一致、规模不大。但是这样一旦有差异需求，容易互相牵连。
-3. 混合式（最常用）：根目录放 tsconfig.base.json，统一通用规则；每个子包 extends 它，再覆盖自己的差异项。适合大多数 monorepo。这样一规范 + 保留灵活性，维护成本最低。
-
-> 该 markdown 源码采用的是第一种形式，这种方式一旦项目多起来就会产生依赖的版本差异，这样维护成本会很大，而且会出现版本兼容错误，后续自己做的时候考虑第三种方案：**根基线 + 子包继承**。（**面试可以说的点**）
->
-
-这里采用混合式配置，根目录安装：`pnpm add  -D -w typescript @type/node`
-
-`tsconfig.json`文件作为类型的公共配置：
+第一步：配置根目录`tsconfig.base.json`（`base`表示其明确是用来被继承的）
 
 ```json
 {
@@ -100,98 +178,380 @@ shamefully-hoist=true
     "baseUrl": ".",
     "module": "esnext",
     "target": "esnext",
-    # 专门配合Vite等构建工具使用，允许在TS中自由使用ESM的导入规则，如省略扩展名
+    // 专门配合 Vite 等构建工具使用，允许在 TS 中自由使用 ESM 的导入规则，如省略扩展名
     "moduleResolution": "bundler",
     "moduleDetection": "force",
-    
+
     "types": [],
     "lib": ["esnext"],
-    "skipLibCheck": true,
-    
+    "skipLibCheck": true, // 跳过第三方库的检查，提速
+
     "sourceMap": true,
-    # 其他包引用时TS可以识别该项目的类型
-    "declaration": true,
-    "declarationMap": true,
+
+    "composite": true, // 允许项目被引用，并增量编译
+    "declaration": true, // 类型文件与源码的映射，方便点进源码
+    "declarationMap": true, // 类型文件与源码的映射，方便点进源码
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    
+
     "verbatimModuleSyntax": false,
-    "isolatedModules": true,
+    "isolatedModules": true, //确保每个文件都能被独立安全地转译
     "noUncheckedSideEffectImports": true
   },
   "exclude": ["node_modules"]
 }
 ```
 
-子包中如果是 node 代码，可以继承根目录的配置并且重写附加相应的配置：
+第二步：子包继承并独立配置
 
 ```json
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // 指定编译后的产物
+    "outDir": "./dist",
+    "rootDir": "./src",
+
     "types": ["node"],
     "lib": ["ESNext"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+
+  // 建立包之间的联系
+  "references": [
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/core" }
+  ]
 }
 ```
 
-## 3.4 代码风格与类型检查配置
-### 3.4.1 Prettier
+别名配置，一般在根目录配置，子包只需要继承即可：
+
+```json
+// 设置 baseUrl 表示 path 中的路径都是基于该位置计算的
+"baseUrl": ".",
+"paths": {
+    "@hele160/*": ["packages/*/src", "shared/*/src"],
+    "@utils/*": ["shared/utils/src/*"]
+}
 ```
-pnpm add  -Dw prettier 
+
+monorepo 配置别名也可以在子包`package.json`中配置：
+
+```json
+"dependencies": {
+  "@hele160/core": "workspace:*"
+}
+```
+
+之后`pnpm install`下载 (在本项目中下载要引用包的软链接)，当`import { ... } from "@hele160/core"` 时，TS 会自动在 `node_modules` 里找到这个快捷方式，然后顺着它直接跳进 `packages/core`来进行引用。
+
+> 如果是脚手架构建的单体项目，总体和根目录的文件配置差不多，只是文件为`tsconfig.json`,且配置文件中的`composite: true`删掉。
+>
+> 单体项目配置别名：
+>
+> ```json
+> // tsconfig.json
+> {
+>   "compilerOptions": {
+>     "baseUrl": ".",
+>     "paths": {
+>       "@/*": ["src/*"]
+>     }
+>   }
+> }
+> ```
+
+### 2.2.2 代码质量与风格
+
+#### ESlint
+
+```
+pnpm add -Dw eslint@latest @eslint/js globals typescript-eslint eslint-plugin-react eslint-plugin-react-hooks eslint-config-prettier eslint-plugin-prettier eslint-plugin-react-refresh
+```
+
+> 这里的 `eslint-config-prettier` 是为了 关闭所有与 Prettier 冲突的 ESLint 规则；而` eslint-plugin-prettier`（为了正常工作必须要配置.prettierrc 文件）是为了让 ESlint 运行 prettier 的规则（prettier 的错误会上报到 ESlint）；@eslint/js 识别 JS 语法；globals 识别全局变量；其实还要添加@types/node，但配置 TS 已经下载。
+
+根目录配置文件：`eslint.config.js`
+
+```js
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import reactPlugin from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import prettierConfig from "eslint-config-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
+
+export default tseslint.config(
+  // 1. 全局忽略
+  { ignores: ["dist", "node_modules", "coverage"] },
+
+  // 2. 基础配置 (JS + TS)
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  {
+    // 3. 针对所有 TS/TSX 文件
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: {
+        ...globals.browser,
+        ...globals.node, // 兼容 Node 环境，不再需要担心 process 报错
+        ...globals.es2020,
+      },
+      // 告诉 ESLint 如何处理 TS
+      parserOptions: {
+        project: [
+          "./tsconfig.base.json",
+          "./packages/*/tsconfig.json",
+          "./apps/*/tsconfig.json",
+        ],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    // 4. 插件声明
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+      prettier: prettierPlugin,
+    },
+    // 5. 自定义规则
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+      "prettier/prettier": "error", // 开启这个，Prettier 错误就会报成 ESLint 错误
+      "no-unused-vars": "off", // 关闭原生的，用 TS 的
+      "@typescript-eslint/no-unused-vars": ["warn"],
+      "@typescript-eslint/no-explicit-any": "warn", // 建议设为 warn 而非 off，提醒自己少用 any
+    },
+  },
+
+  // 6. 最后：关闭所有冲突规则 (必须放在数组最后)
+  prettierConfig,
+);
+```
+
+> 子包不需要配置，会自动往上找。但是如果子包是 node 环境，此时可以
+
+#### Prettier
+
+```
+pnpm add  -Dw prettier
 ```
 
 > 1. 注意需要安装对应的依赖包而不是安装插件，这是因为插件不能保障所有的电脑和系统都安装，通过配置 prettire 文件可以后续便于后续检测部署。VS Code 插件用来执行配置的规矩（当然如果没有安装对应的依赖或者配置文件，就会用插件默认的配置文件和包），当保存时插件会自动去 `node_modules` 里找装好的那个 `prettier` 包来干活。
 > 2. 拓展：后续检测部署
->     - Husky：让代码在 `git commit` 的瞬间自动跑一遍 `prettier`。格式不对，根本不让提交。
->     - CI：当代码推送到服务器准备部署前，服务器会跑一遍格式检测。如果格式乱了，部署流程直接中断并报错
->
+>    - Husky：让代码在 `git commit` 的瞬间自动跑一遍 `prettier`。格式不对，根本不让提交。
+>    - CI：当代码推送到服务器准备部署前，服务器会跑一遍格式检测。如果格式乱了，部署流程直接中断并报错
 
-配置`.prettierrc`  文件，为了不检查打包后的目录文件或者不想检查的文件，需要配置`.prettierignore`  文件。
-
-补充：关于自动化配置代码检查，可以安装对应的依赖：`pnpm add -Dw husky lint-staged`，初始化 `pnpm exec husky init`,在 package.json 配置：
+配置`.prettierrc` 文件，
 
 ```json
 {
-  "scripts": {
-    "prepare": "husky"
-  },
+  "semi": false, // 结尾不加分号 (React 社区流行)
+  "singleQuote": true, // 使用单引号
+  "trailingComma": "all", // 尽可能打印尾随逗号
+  "printWidth": 80, // 每行最大字符数
+  "tabWidth": 2, // 缩进空格数
+  "proseWrap": "preserve", // Markdown 换行策略：保持原样
+  "overrides": [
+    {
+      "files": "*.md",
+      "options": {
+        "parser": "markdown" // 显式指定 Markdown 解析
+      }
+    }
+  ]
+}
+```
+
+为了不检查打包后的目录文件或者不想检查的文件，需要配置`.prettierignore` 文件：
+
+```json
+# 依赖和构建
+node_modules
+dist
+build
+out
+.next
+
+# 缓存
+.pnpm-store
+.eslintcache
+
+# 自动生成的文件
+package-lock.json
+pnpm-lock.yaml
+
+# 你的 Markdown 项目可能会产生的临时预览文件
+*.tmp
+```
+
+#### 拼写检查
+
+```bash
+pnpm add -Dw cspell @cspell/dict-lorem-ipsum @cspell/dict-software-terms @cspell/dict-typescript
+```
+
+配置 `cspell.json`:
+
+```json
+{
+  "version": "0.2",
+  "language": "en",
+  // 1. 核心：集成你安装的外部词库，让它们真正生效
+  "import": [
+    "@cspell/dict-lorem-ipsum/cspell-ext.json",
+    "@cspell/dict-software-terms/cspell-ext.json",
+    "@cspell/dict-typescript/cspell-ext.json",
+    "@cspell/dict-node/cspell-ext.json"
+  ],
+  // 2. 项目特有词汇：这些是库里没有的，或者你自定义的
+  "words": [
+    "pnpm",
+    "codemirror",
+    "vite",
+    "lucide",
+    "unocss",
+    "zustand",
+    "ant-design",
+    "vercel",
+    "staged"
+  ],
+  // 3. 忽略路径：防止检查第三方库和打包文件
+  "ignorePaths": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".vscode/**",
+    "pnpm-lock.yaml",
+    "package-lock.json",
+    "**/*.svg",
+    "**/*.webp",
+    "**/*.png"
+  ],
+  // 4. 针对 Markdown 的增强：忽略链接，防止长 URL 报错
+  "overrides": [
+    {
+      "filename": "**/*.md",
+      "languageId": "markdown",
+      "ignoreRegExpList": ["/\\[.*?\\]\\(.*?\\)/g"]
+    }
+  ]
+}
+```
+
+集成 husky：
+
+```json
+"lint-staged": {
+  "*.{js,ts,tsx,json,md}": [
+    "cspell lint --no-summary --no-progress", // 检查拼写
+    "prettier --write"                        // 格式化
+  ]
+}
+```
+
+## 2.3 动态准入配置
+
+在代码进入仓库之前，对代码进行检查，如果检查不合格直接打回。
+
+### 2.3.1 Git 初始化配置
+
+初始化`git`仓库：
+
+```bash
+git init
+```
+
+配置` .gitignore`：
+
+```bash
+# 依赖与产物
+node_modules
+dist
+build
+.next
+.turbo
+
+# 日志与环境
+*.log
+.env*
+.DS_Store
+
+# 缓存
+.cache
+.eslintcache
+```
+
+### 2.3.2 husky & lint-staged
+
+`husky`的作用是实现在代码提交之前的检查，如果不符合规范则直接打回。`lint-staged`则是**只会过滤出 Git 暂存区的文件 ** 并进行检查，避免全局文件的检查，提高了效率。
+
+```bash
+pnpm -Dw add husky lint-staged
+# 初始化
+pnpm husky init
+```
+
+配置 `husky/pre-commit` ：
+
+```bash
+pnpm exec lint-staged
+```
+
+配置`lint-staged`规则：
+
+```json
+// package.json
+{
+   "scripts": {
+      // fang'bian
+      "prepare": "husky"
+    }
   "lint-staged": {
-    "*.{js,ts,tsx,json,md}": [
+    "*.{js,ts,tsx,vue}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{scss,less,css,html,md}": [
       "prettier --write"
     ]
   }
 }
 ```
 
-> 一个项目执行流程：
->
-> + **本地阶段 (Local)**：写代码 `git commit` husky 触发 lint-staged 代码被格式化并检查通过交成功。
-> + **推送阶段 (Push)**：运行 `git push`。
-> + **云端阶段 (CI/CD)**：**GitHub Actions** 接收到代码自动运行 `pnpm install`运行 `pnpm build`部署到服务器。
+> 要先配置`prettier`和`eslint`。
 
-### 3.4.2 ESlint
+执行流程：当`git commit`时，被`husky`拦截，之后开始执行`.husky文件`下的钩子中的命令，执行`pre-commit`中的 lint-staged，对已经改的文件进行校验修正 (根据`prettier`和`eslint`)，如果实在修复不了就打回。
+
+### 2.3.3 信息提交规范
+
+使用`Commitlint & cz-git`强制规范提交信息，前提要安装并且配置 Husky。
+
+```bash
+pnpm add -Dw @commitlint/cli @commitlint/config-conventional commitizen cz-git
 ```
-pnpm add -Dw eslint@latest @eslint/js globals typescript-eslint eslint-plugin-react eslint-plugin-react-hooks eslint-config-prettier eslint-plugin-prettier
-```
 
-> 这里的 eslint-config-prettier 是为了 关闭所有与 Prettier 冲突的 ESLint 规则；而` eslint-plugin-prettier`（为了正常工作必须要配置.prettierrc 文件）是为了让 ESlint 运行 prettier 的规则（prettier 的错误会上报到 ESlint）；@eslint/js 识别 JS 语法；globals 识别全局变量；其实还要添加@types/node，但已经添加。
+> `@commitlint/cli`是`Commitlint` 的核心引擎，负责阅读提交的 message，根据规则判定通不通过；
 >
+> `@commitlint/config-conventional`是检查的官方检查标准手册，一般要继承并根据实时情况拓展；
+>
+> `commitizen`是运行 cz 命令时的提问框架；
+>
+> `cz-git`是`commitizen`的适配器（一个插件），提供更好的交互体验更强大的拓展空间；
 
-配置文件：`eslint.config.js`。
-
-### 3.4.3 拼写检查
-`pnpm -Dw add cspell @cspell/dict-lorem-ipsum`，配置 `cspell.json`文件。
-
-### 3.4.4 Git 提交规范
-`git init`初始化仓库；
-
-`echo "" > .gitignore`创建文件；
-
-+ `pnpm add -Dw @commitlint/cli @commitlint/config-conventional commitizen cz-git`，该库可以对提交信息进行规范。
+配置`package.json`
 
 ```json
 // package.json
@@ -200,114 +560,56 @@ pnpm add -Dw eslint@latest @eslint/js globals typescript-eslint eslint-plugin-re
   },
 "config": {
     "commitizen": {
-      "path": "cz-git"
+      "path": "node_modules/cz-git"
     }
   }
 ```
 
-配置 commitlint.config.js 文件 (直接继承)：
+配置 `commitlint.config.js` ：
 
 ```javascript
-export default { extends: ['@commitlint/config-conventional'] };
-```
-
-> 要安装一下@commitlint/config-conventional 官方自带的提交规范。
->
-
-![](assets/monorepo工程管理/image (3).png)
-
-为了适配中文，可以在官方配置的基础上，配置`.czvinylrc` ：
-
-```json
-{
-    "headerFormat": "{type}({scope}): {subject}",
-    "commitTypes": [
-        {
-            "description": "一个新的功能",
-            "value": "feat"
-        },
-        {
-            "description": "一个 BUG 修复",
-            "value": "fix"
-        },
-        {
-            "description": "辅助工具更改或者无法分类的提交",
-            "value": "chore"
-        },
-        {
-            "description": "提高性能的代码更改",
-            "value": "perf"
-        },
-        {
-            "description": "不修复错误也不增加功能的重构代码",
-            "value": "refactor"
-        },
-        {
-            "description": "更新代码格式",
-            "value": "style"
-        },
-        {
-            "description": "添加测试用例",
-            "value": "test"
-        },
-        {
-            "description": "更新文档",
-            "value": "docs"
-        },
-        {
-            "description": "更新 CI 发版代码",
-            "value": "ci"
-        },
-        {
-            "description": "更新构建依赖等模块",
-            "value": "build"
-        }
+export default {
+  extends: ["@commitlint/config-conventional"],
+  prompt: {
+    messages: {
+      type: "选择提交类型：",
+      subject: "填写简短描述：",
+      confirmCommit: "确认提交该信息？",
+    },
+    types: [
+      { value: "feat", name: "feat:     新增功能" },
+      { value: "fix", name: "fix:      修复缺陷" },
+      { value: "docs", name: "docs:     文档更新" },
+      { value: "style", name: "style:    格式调整" },
+      { value: "refactor", name: "refactor: 代码重构" },
+      { value: "perf", name: "perf:     性能优化" },
+      { value: "test", name: "test:     测试相关" },
+      { value: "chore", name: "chore:    其他修改" },
     ],
-    "skipScope": false,
-    "skipTicketId": true,
-    "subjectMaxLength": 70,
-    "subjectMinLength": 3,
-    "typeQuestion": "请选择一个提交类型：",
-    "scopeQuestion": "请输入一个改动范围：",
-    "subjectQuestion": "请输入一个提交信息：",
-    "bodyQuestion": "请输入一个提交详细内容（可跳过）："
-}
-```
+    skipQuestions: ["scope", "body", "breaking", "footer", "footerPrefix"],
 
-+ `pnpm -Dw add husky`: 实现在代码提交之前的检查，如果不符合规范则直接打回。
-    - 初始化：`pnpx husky init`
-
-可以在 husky/pre-commit 填入相关的命令，提交之前会执行相关的命令，`husky`一般配合 lint-staged 包来一起使用。
-
-+ `pnpm -Dw add lint-staged`: **只过滤出 Git 暂存区的文件**并进行检查，避免全局文件的检查，提高了效率。
-
-可以在 package.json 中配置：
-
-```json
-
-{
-  "name": "your-project",
-  "scripts": {
-    "prepare": "husky install"
+    useEmoji: false,
+    subjectMaxLength: 100,
   },
-  "lint-staged": {
-    "*.{js,ts,tsx}": [
-      "prettier --write",
-      "eslint --fix"
-    ],
-    "*.md": "prettier --write"
-  }
-}
+};
 ```
 
-也可以写相应的配置文件：`lintstagedrc.js`。原理都是通过 Husky 在提交之前拦截并检查，lint-staged 保证了只检查在暂存区的文件，大大提高了效率，上面的命令是提交之前执行相关的检查命令。记得在 husky 里面配置 `pnpm exec lint-staged`将两者联系起来。
+在 husky 文件中创建`commit-msg`：
 
-# 4. 代码统一化管理
-## 4.1 统一打包
-这里的打包一般针对的是公共库，公共库之间一般会存在着相互的引用，如果单独打包发布可能会产生版本冲突问题。建立 scripts/build.js，后面补一下 Rollup 的基本使用，除了打包文件，还可以开观察者模式。
+```bash
+npx --no --commitlint --edit "$1"
+```
 
-## 4.2 建立包依赖
-通过在相应子包中的 package.json 文件的 dependencies 中编写：
+> 交互流程：
+>
+> - 当执行`pnpm commit`时，触发`commitizen`，`commitizen`加载`cz-git`插件，开始填表，完成之后生成对应的标准提交字符串，`commitizen` 会在后台**自动执行** `git commit -m "生成的字符串"`，`Git`准备写入记录，触发`commit-msg`钩子，`@commitlint/cli`按照`commitlint.config.js`的配置文件检查信息，确认没有问题则放行入库，不符合则报错。
+> - 也可以直接进行`git commit`，不需要填表，husky 会拦截判断字符串，符合就可以通过（不需要`commitizen`、` cz-git`触发填表）。
+
+## 2.4 环境与工程配置
+
+### 2.4.1 子包协作
+
+在相应子包中的 `package.json` 文件的 `dependencies` 中编写：
 
 ```json
 "dependencies": {
@@ -326,10 +628,7 @@ export default { extends: ['@commitlint/config-conventional'] };
 "types": "./dist/index.d.ts",
 ```
 
-## 4.3 测试
-对公共库进行测试，只要涉及的测试有集成测试、**单元测试**（Vitest、Mocha、Jest）以及 e2e 测试等。
-
-## 4.4 发布
+### 2.4.2 版本分发
 
 目前最主流的方案是 Changesets，它解决了“哪些包需要发版”和“版本号怎么定”的问题。
 
@@ -341,7 +640,7 @@ export default { extends: ['@commitlint/config-conventional'] };
 pnpm changeset
 ```
 
-**交互式询问**：哪个包改了？是重大更新、功能新增还是修复？	
+**交互式询问**：哪个包改了？是重大更新、功能新增还是修复？
 
 **生成文件**：在 `.changeset/` 目录下生成一个随机命名的 `.md` 文件，记录了变动信息。这文件要随代码一起提交到 Git。
 
